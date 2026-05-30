@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>synthetic_mind — Asistente de IA on-device</title>
+<meta name="description" content="synthetic_mind: un asistente de IA que se ejecuta íntegramente en tu iPhone. Privado por diseño, inferencia local, acceso web bajo tu control.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Sora:wght@300;400;600;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0a0b0f;
+    --bg-soft:#11131a;
+    --ink:#e8eaf0;
+    --ink-dim:#8b90a3;
+    --line:#1e212c;
+    --accent:#5eead4;
+    --accent-2:#818cf8;
+    --glow:rgba(94,234,212,.14);
+    --mono:'Space Mono',monospace;
+    --sans:'Sora',sans-serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    background:var(--bg);
+    color:var(--ink);
+    font-family:var(--sans);
+    font-weight:300;
+    line-height:1.6;
+    overflow-x:hidden;
+    -webkit-font-smoothing:antialiased;
+  }
+  body::before{
+    content:"";
+    position:fixed;inset:0;
+    background:
+      radial-gradient(600px 400px at 80% -5%, var(--glow), transparent 60%),
+      radial-gradient(500px 500px at 5% 110%, rgba(129,140,248,.10), transparent 60%);
+    pointer-events:none;z-index:0;
+  }
+  body::after{
+    content:"";
+    position:fixed;inset:0;
+    background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);
+    background-size:60px 60px;
+    opacity:.18;
+    mask-image:radial-gradient(ellipse 80% 60% at 50% 30%,#000,transparent 75%);
+    pointer-events:none;z-index:0;
+  }
+  .wrap{position:relative;z-index:1;max-width:920px;margin:0 auto;padding:0 28px}
+
+  /* NAV */
+  nav{
+    display:flex;justify-content:space-between;align-items:center;
+    padding:30px 0 0;font-family:var(--mono);font-size:13px;
+  }
+  .brand{display:flex;align-items:center;gap:10px;letter-spacing:-.5px}
+  .dot{width:9px;height:9px;border-radius:50%;background:var(--accent);box-shadow:0 0 14px var(--accent);animation:pulse 2.4s ease-in-out infinite}
+  @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.45;transform:scale(.8)}}
+  nav a{color:var(--ink-dim);text-decoration:none;transition:color .2s}
+  nav a:hover{color:var(--accent)}
+
+  /* HERO */
+  header{padding:120px 0 90px}
+  .tag{
+    font-family:var(--mono);font-size:12px;letter-spacing:2px;text-transform:uppercase;
+    color:var(--accent);border:1px solid var(--line);border-radius:30px;
+    padding:7px 16px;display:inline-block;margin-bottom:32px;
+    background:var(--bg-soft);
+  }
+  h1{
+    font-size:clamp(40px,8vw,76px);font-weight:800;line-height:.98;letter-spacing:-2.5px;
+    margin-bottom:26px;
+  }
+  h1 .grad{
+    background:linear-gradient(120deg,var(--accent),var(--accent-2));
+    -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+  }
+  .lede{font-size:clamp(17px,2.4vw,21px);color:var(--ink-dim);max-width:560px;font-weight:300}
+  .lede strong{color:var(--ink);font-weight:600}
+
+  /* FEATURE GRID */
+  section{padding:70px 0;border-top:1px solid var(--line)}
+  .eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:2px;color:var(--accent-2);text-transform:uppercase;margin-bottom:14px}
+  h2{font-size:clamp(26px,4vw,38px);font-weight:600;letter-spacing:-1px;margin-bottom:40px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+  .card{background:var(--bg-soft);padding:30px 26px;transition:background .25s}
+  .card:hover{background:#161922}
+  .card .ico{font-family:var(--mono);font-size:13px;color:var(--accent);margin-bottom:16px}
+  .card h3{font-size:18px;font-weight:600;margin-bottom:8px}
+  .card p{font-size:14.5px;color:var(--ink-dim)}
+
+  /* PRIVACY HIGHLIGHT */
+  .privacy-box{
+    background:linear-gradient(135deg,var(--bg-soft),#0d0f15);
+    border:1px solid var(--line);border-radius:16px;padding:42px 38px;
+    position:relative;overflow:hidden;
+  }
+  .privacy-box::before{
+    content:"";position:absolute;top:-40%;right:-10%;width:300px;height:300px;
+    background:radial-gradient(circle,var(--glow),transparent 70%);pointer-events:none;
+  }
+  .privacy-box ul{list-style:none;margin-top:22px;display:grid;gap:14px}
+  .privacy-box li{display:flex;gap:14px;align-items:flex-start;font-size:15.5px;color:var(--ink)}
+  .privacy-box li b{color:var(--accent);font-family:var(--mono);font-size:14px}
+  .privacy-box li span{color:var(--ink-dim)}
+
+  /* CTA */
+  .cta-row{display:flex;gap:14px;flex-wrap:wrap;margin-top:36px}
+  .btn{
+    font-family:var(--mono);font-size:14px;text-decoration:none;padding:14px 26px;border-radius:10px;
+    transition:transform .2s,box-shadow .2s;display:inline-block;
+  }
+  .btn-primary{background:var(--accent);color:#04140f;font-weight:700;box-shadow:0 0 0 rgba(94,234,212,0)}
+  .btn-primary:hover{transform:translateY(-2px);box-shadow:0 10px 30px var(--glow)}
+  .btn-ghost{border:1px solid var(--line);color:var(--ink)}
+  .btn-ghost:hover{border-color:var(--accent);color:var(--accent)}
+
+  footer{padding:50px 0 60px;border-top:1px solid var(--line);font-family:var(--mono);font-size:13px;color:var(--ink-dim);display:flex;justify-content:space-between;flex-wrap:wrap;gap:16px}
+  footer a{color:var(--ink-dim);text-decoration:none}
+  footer a:hover{color:var(--accent)}
+
+  .reveal{opacity:0;transform:translateY(20px);animation:rise .8s forwards}
+  @keyframes rise{to{opacity:1;transform:none}}
+  .d1{animation-delay:.05s}.d2{animation-delay:.15s}.d3{animation-delay:.25s}.d4{animation-delay:.35s}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <nav>
+    <div class="brand"><span class="dot"></span>synthetic_mind</div>
+    <div><a href="privacy.html">Privacidad</a></div>
+  </nav>
+
+  <header>
+    <span class="tag reveal d1">100% on-device · iOS</span>
+    <h1 class="reveal d2">Una IA que vive<br><span class="grad">dentro de tu iPhone.</span></h1>
+    <p class="lede reveal d3">synthetic_mind ejecuta toda la inferencia <strong>localmente en tu dispositivo</strong>. Sin servidores intermedios, sin cuentas, sin tu conversación viajando a la nube.</p>
+    <div class="cta-row reveal d4">
+      <a class="btn btn-primary" href="#features">Cómo funciona</a>
+      <a class="btn btn-ghost" href="privacy.html">Política de privacidad</a>
+    </div>
+  </header>
+
+  <section id="features">
+    <div class="eyebrow">Arquitectura</div>
+    <h2>Privado por diseño.</h2>
+    <div class="grid">
+      <div class="card">
+        <div class="ico">[ local ]</div>
+        <h3>Inferencia on-device</h3>
+        <p>El modelo de lenguaje corre íntegramente en tu iPhone. Tus mensajes no salen del dispositivo para ser procesados.</p>
+      </div>
+      <div class="card">
+        <div class="ico">[ memory ]</div>
+        <h3>Memoria local</h3>
+        <p>El contexto y la memoria semántica se almacenan solo en tu dispositivo, bajo tu control.</p>
+      </div>
+      <div class="card">
+        <div class="ico">[ web ]</div>
+        <h3>Acceso web puntual</h3>
+        <p>Cuando una respuesta necesita información actual, se realiza una consulta web directa desde tu iPhone. Solo se envía la consulta necesaria.</p>
+      </div>
+      <div class="card">
+        <div class="ico">[ no_acct ]</div>
+        <h3>Sin cuentas</h3>
+        <p>No hay registro ni inicio de sesión. No recopilamos identidad, correo ni perfil de usuario.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="eyebrow">Tus datos</div>
+    <h2>Lo esencial, en claro.</h2>
+    <div class="privacy-box">
+      <ul>
+        <li><b>→</b><span><b style="color:var(--ink)">El procesamiento es local.</b> La generación de respuestas ocurre en tu iPhone mediante un modelo de IA embebido.</span></li>
+        <li><b>→</b><span><b style="color:var(--ink)">Solo sale la consulta web.</b> Cuando se necesita información de internet, se envía únicamente el texto de búsqueda necesario, directamente desde tu dispositivo.</span></li>
+        <li><b>→</b><span><b style="color:var(--ink)">No hay backend propio.</b> No operamos servidores que reciban o almacenen tus conversaciones.</span></li>
+        <li><b>→</b><span><b style="color:var(--ink)">Tú mandas.</b> El historial y la memoria viven en tu dispositivo y puedes borrarlos.</span></li>
+      </ul>
+    </div>
+    <div class="cta-row">
+      <a class="btn btn-ghost" href="privacy.html">Leer la política completa →</a>
+    </div>
+  </section>
+
+  <footer>
+    <div>© 2026 synthetic_mind</div>
+    <div><a href="privacy.html">Privacidad</a> · <a href="index.html">Inicio</a></div>
+  </footer>
+</div>
+</body>
+</html>
