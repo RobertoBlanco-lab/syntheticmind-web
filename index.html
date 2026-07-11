@@ -1,57 +1,231 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Política de Privacidad — SyntheticMind</title>
-  <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; line-height: 1.6; color: #1d1d1f; max-width: 760px; margin: 0 auto; padding: 40px 20px; }
-    h1 { font-size: 28px; margin-bottom: 4px; }
-    h2 { font-size: 20px; margin-top: 32px; }
-    .updated { color: #6e6e73; font-size: 14px; margin-bottom: 24px; }
-    a { color: #0066cc; }
-    footer { margin-top: 40px; font-size: 14px; color: #6e6e73; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SyntheticMind — Tu IA. 100% privada.</title>
+<meta name="description" content="La única IA que responde derecho español, lee tus documentos y funciona en modo avión — sin enviar un solo byte fuera de tu iPhone.">
+<style>
+  :root {
+    --bg: #0b0f0d;
+    --bg-card: #131a16;
+    --border: #223028;
+    --text: #e8f0ea;
+    --muted: #93a89b;
+    --accent: #3ddc84;
+    --accent-dim: #2aa864;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    line-height: 1.6;
+  }
+  .wrap { max-width: 980px; margin: 0 auto; padding: 0 24px; }
+
+  header {
+    padding: 18px 0;
+    border-bottom: 1px solid var(--border);
+    position: sticky; top: 0;
+    background: rgba(11,15,13,.92);
+    backdrop-filter: blur(8px);
+    z-index: 10;
+  }
+  header .wrap { display: flex; align-items: center; justify-content: space-between; }
+  .logo { font-weight: 700; font-size: 1.15rem; letter-spacing: -.02em; }
+  .logo span { color: var(--accent); }
+  nav a {
+    color: var(--muted); text-decoration: none; margin-left: 22px; font-size: .95rem;
+  }
+  nav a:hover { color: var(--text); }
+
+  .hero { text-align: center; padding: 90px 0 70px; }
+  .hero h1 {
+    font-size: clamp(2.4rem, 6vw, 4rem);
+    letter-spacing: -.03em; line-height: 1.1; font-weight: 800;
+  }
+  .hero h1 em { font-style: normal; color: var(--accent); }
+  .hero p.sub {
+    margin: 22px auto 0; max-width: 560px;
+    color: var(--muted); font-size: 1.2rem;
+  }
+  .badges { margin-top: 26px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+  .badge {
+    border: 1px solid var(--border); border-radius: 999px;
+    padding: 6px 16px; font-size: .88rem; color: var(--muted);
+  }
+  .badge b { color: var(--accent); font-weight: 600; }
+  .cta { margin-top: 38px; display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+  .btn {
+    display: inline-block; padding: 14px 30px; border-radius: 12px;
+    text-decoration: none; font-weight: 600; font-size: 1rem;
+  }
+  .btn-primary { background: var(--accent); color: #06130b; }
+  .btn-primary:hover { background: var(--accent-dim); }
+  .btn-ghost { border: 1px solid var(--border); color: var(--text); }
+  .btn-ghost:hover { border-color: var(--accent-dim); }
+
+  .motor {
+    margin: 0 auto; max-width: 420px; margin-top: 46px;
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: 14px; padding: 14px 20px;
+    font-size: .9rem; color: var(--muted);
+    display: flex; align-items: center; gap: 10px; justify-content: center;
+  }
+  .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--accent);
+         box-shadow: 0 0 8px var(--accent); flex: none; }
+
+  section { padding: 70px 0; border-top: 1px solid var(--border); }
+  h2 { font-size: clamp(1.6rem, 4vw, 2.2rem); letter-spacing: -.02em; margin-bottom: 8px; }
+  .lead { color: var(--muted); max-width: 640px; margin-bottom: 40px; }
+
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 18px; }
+  .card {
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: 16px; padding: 26px;
+  }
+  .card .icon { font-size: 1.6rem; margin-bottom: 12px; }
+  .card h3 { font-size: 1.08rem; margin-bottom: 8px; }
+  .card p { color: var(--muted); font-size: .95rem; }
+
+  .chat {
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: 16px; padding: 26px; max-width: 620px; margin: 0 auto;
+  }
+  .msg { padding: 12px 16px; border-radius: 12px; margin-bottom: 12px; font-size: .95rem; }
+  .msg.user { background: #1b2620; margin-left: 15%; }
+  .msg.bot { background: #0f1512; border: 1px solid var(--border); margin-right: 5%; }
+  .msg.bot small { display: block; margin-top: 10px; color: var(--accent); font-size: .8rem; }
+
+  .datos table { width: 100%; border-collapse: collapse; font-size: .95rem; }
+  .datos th, .datos td { text-align: left; padding: 12px 14px; border-bottom: 1px solid var(--border); }
+  .datos th { color: var(--muted); font-weight: 600; font-size: .85rem; text-transform: uppercase; letter-spacing: .05em; }
+  .datos td:first-child { font-weight: 600; }
+  .datos .si { color: var(--accent); }
+
+  footer {
+    border-top: 1px solid var(--border);
+    padding: 40px 0; color: var(--muted); font-size: .9rem; text-align: center;
+  }
+  footer a { color: var(--muted); }
+</style>
 </head>
 <body>
-  <h1>Política de Privacidad</h1>
-  <p class="updated">SyntheticMind · Última actualización: 31 de mayo de 2026</p>
 
-  <p>Esta Política de Privacidad describe cómo la aplicación <strong>SyntheticMind</strong> (en adelante, "la App") trata la información cuando la utilizas. La privacidad es el principio central de esta App.</p>
+<header>
+  <div class="wrap">
+    <div class="logo">Synthetic<span>Mind</span></div>
+    <nav>
+      <a href="#privacidad">Privacidad</a>
+      <a href="#legal">Legal</a>
+      <a href="#datos">Datos abiertos</a>
+      <a href="#descarga">Descargar</a>
+    </nav>
+  </div>
+</header>
 
-  <h2>1. Resumen</h2>
-  <p>SyntheticMind es un asistente de IA que funciona <strong>íntegramente en tu dispositivo</strong>. El modelo de IA (Qwen3-4B, con licencia Apache 2.0) está integrado en la App y realiza todo el procesamiento de forma local. Tus conversaciones y datos personales <strong>no se envían a ningún servidor ni a ningún servicio de IA de terceros</strong> (como OpenAI/ChatGPT, Anthropic/Claude, Google u otros).</p>
+<section class="hero wrap" style="border:none">
+  <h1>Tu IA. <em>100% privada.</em></h1>
+  <p class="sub">La única IA que responde derecho español, lee tus documentos y funciona en modo avión — sin enviar un solo byte fuera de tu iPhone.</p>
+  <div class="badges">
+    <div class="badge"><b>Sin</b> nube</div>
+    <div class="badge"><b>Sin</b> cuentas</div>
+    <div class="badge"><b>Sin</b> suscripción</div>
+    <div class="badge"><b>100%</b> on-device</div>
+  </div>
+  <div class="cta">
+    <a class="btn btn-primary" href="#descarga">Descargar en el App Store</a>
+    <a class="btn btn-ghost" href="#legal">Ver qué sabe hacer</a>
+  </div>
+  <div class="motor"><span class="dot"></span> MOTOR · on-device · RAG activo · privado</div>
+</section>
 
-  <h2>2. Sin cuentas ni pagos</h2>
-  <p>La App no requiere inicio de sesión, cuenta ni credenciales. No incluye funciones de pago, suscripciones ni compras dentro de la App. Solo tienes que abrir la App y escribir tu pregunta.</p>
+<section id="privacidad">
+  <div class="wrap">
+    <h2>Funciona en modo avión</h2>
+    <p class="lead">Toda la inteligencia vive en tu iPhone. Actívale el modo avión y pregúntale: responde igual. Esa es la prueba.</p>
+    <div class="grid">
+      <div class="card">
+        <div class="icon">✈️</div>
+        <h3>Cero internet necesario</h3>
+        <p>El modelo, la memoria y las fuentes viven en tu móvil. Tus preguntas nunca salen de él.</p>
+      </div>
+      <div class="card">
+        <div class="icon">🔒</div>
+        <h3>Memoria privada</h3>
+        <p>Sin cuentas, sin telemetría, sin analítica. Comprado una vez, tuyo para siempre.</p>
+      </div>
+      <div class="card">
+        <div class="icon">✅</div>
+        <h3>Verificación de fuentes</h3>
+        <p>Cada respuesta te dice qué la respalda: fragmentos de la base local, fuente y confianza. Si no lo sabe, te lo dice.</p>
+      </div>
+      <div class="card">
+        <div class="icon">📷</div>
+        <h3>Lee tus documentos</h3>
+        <p>Hazle una foto a una nota o documento. La entiende sin salir de tu móvil.</p>
+      </div>
+      <div class="card">
+        <div class="icon">🎙️</div>
+        <h3>Háblale en español</h3>
+        <p>Dicta tu pregunta y escucha la respuesta. Pensado de cero para el español.</p>
+      </div>
+      <div class="card">
+        <div class="icon">🧠</div>
+        <h3>Mira cómo lo pensó</h3>
+        <p>Razonamiento paso a paso, escenarios enfrentados y conclusión prudente en cada análisis.</p>
+      </div>
+    </div>
+  </div>
+</section>
 
-  <h2>3. Datos que NO recopilamos</h2>
-  <p>No recopilamos, almacenamos en servidores externos ni vendemos: tu nombre, tu correo electrónico, tu ubicación, tus contactos, tu identidad, el contenido de tus conversaciones con la IA, ni ningún otro dato personal. No utilizamos servicios de análisis, seguimiento, autenticación ni pago.</p>
+<section id="legal">
+  <div class="wrap">
+    <h2>El BOE en tu bolsillo</h2>
+    <p class="lead">Corpus jurídico real ingerido del BOE: Ley de Sociedades de Capital, Estatuto de los Trabajadores, Código Civil, Ley Concursal, Código de Comercio y más — artículo a artículo, con verificación anti-alucinación.</p>
+    <div class="chat">
+      <div class="msg user">¿Qué dice el artículo 348 bis de la LSC?</div>
+      <div class="msg bot">
+        El artículo 348 bis reconoce al socio el derecho de separación en caso de falta de distribución de dividendos. Transcurrido el quinto ejercicio desde la inscripción de la sociedad, el socio que hubiera hecho constar su protesta podrá separarse si la junta no acuerda distribuir como dividendo al menos el veinticinco por ciento de los beneficios…
+        <small>✓ Verificado · texto oficial BOE · fuente local · modo avión</small>
+      </div>
+    </div>
+  </div>
+</section>
 
-  <h2>4. Procesamiento de IA en el dispositivo</h2>
-  <p>Toda la generación de respuestas de IA se ejecuta localmente en tu dispositivo mediante el modelo Qwen3-4B integrado en la App. Las preguntas que escribes y las respuestas generadas permanecen en tu dispositivo y no se transmiten a internet para su procesamiento por IA.</p>
+<section id="datos">
+  <div class="wrap datos">
+    <h2>Datos abiertos oficiales, dentro de la app</h2>
+    <p class="lead">SyntheticMind ingiere los portales de datos abiertos de las administraciones y responde citando la fuente oficial — sin conexión.</p>
+    <table>
+      <tr><th>Fuente</th><th>Contenido</th><th>Offline</th></tr>
+      <tr><td>BOE</td><td>Legislación consolidada, artículo a artículo</td><td class="si">✓</td></tr>
+      <tr><td>Junta de Castilla y León</td><td>Turismo, Consejo de Gobierno, planes y catálogo del portal de datos abiertos</td><td class="si">✓</td></tr>
+      <tr><td>Principado de Asturias</td><td>Catálogo completo de datos abiertos (SADEI, empleo, economía)</td><td class="si">✓</td></tr>
+      <tr><td>Comunidad de Madrid</td><td>Catálogo completo: empleo, agua, educación, servicios sociales</td><td class="si">✓</td></tr>
+    </table>
+  </div>
+</section>
 
-  <h2>5. Búsqueda web (DuckDuckGo)</h2>
-  <p>El único servicio externo que utiliza la App es la <strong>búsqueda web de DuckDuckGo</strong>, empleada únicamente para obtener información actual o factual cuando una pregunta requiere datos actualizados. En esos casos, solo se envía <strong>el texto de la consulta de búsqueda</strong> a DuckDuckGo. <strong>No</strong> se transmite ningún dato personal, identidad de usuario ni historial de conversación. El tratamiento de esa consulta por parte de DuckDuckGo se rige por su propia política de privacidad, disponible en <a href="https://duckduckgo.com/privacy" target="_blank" rel="noopener">https://duckduckgo.com/privacy</a>. DuckDuckGo declara que no recopila ni comparte información personal de sus usuarios.</p>
+<section id="descarga">
+  <div class="wrap" style="text-align:center">
+    <h2>Tus preguntas nunca salen de aquí</h2>
+    <p class="lead" style="margin-left:auto;margin-right:auto">Sin nube. Sin cuentas. Sin suscripción. Comprado una vez, tuyo para siempre.</p>
+    <div class="cta">
+      <!-- Cuando tengas la URL del App Store, sustitúyela aquí -->
+      <a class="btn btn-primary" href="https://apps.apple.com/" target="_blank" rel="noopener">Descargar en el App Store</a>
+    </div>
+  </div>
+</section>
 
-  <h2>6. Servicios de IA de terceros</h2>
-  <p>La App <strong>no integra ningún servicio de IA de terceros</strong> ni envía datos a APIs de IA externas para generar respuestas. Toda la inteligencia artificial se ejecuta en el dispositivo.</p>
+<footer>
+  <div class="wrap">
+    SyntheticMind — IA privada en español, escrita en Rust · 100% on-device<br>
+    <a href="privacy.html">Política de privacidad</a> · Contacto: <a href="mailto:roberto34t10@gmail.com">roberto34t10@gmail.com</a>
+  </div>
+</footer>
 
-  <h2>7. Almacenamiento de datos</h2>
-  <p>Cualquier dato que generes (por ejemplo, el historial de conversaciones, si la App lo guarda) se almacena únicamente de forma local en tu dispositivo. Puedes eliminar estos datos en cualquier momento borrándolos dentro de la App o desinstalándola.</p>
-
-  <h2>8. Análisis y publicidad</h2>
-  <p>La App no incluye herramientas de seguimiento publicitario ni de análisis de comportamiento que envíen datos personales identificables a terceros.</p>
-
-  <h2>9. Menores</h2>
-  <p>La App no está dirigida a menores de 13 años y no recopila conscientemente datos personales de menores.</p>
-
-  <h2>10. Cambios en esta política</h2>
-  <p>Podemos actualizar esta Política de Privacidad ocasionalmente. Publicaremos cualquier cambio en esta misma página con una fecha de actualización revisada.</p>
-
-  <h2>11. Contacto</h2>
-  <p>Si tienes preguntas sobre esta Política de Privacidad, contáctanos en: <a href="mailto:robertoblanco699@icloud.com">robertoblanco699@icloud.com</a></p>
-
-  <footer>© 2026 SyntheticMind. Todos los derechos reservados.</footer>
 </body>
 </html>
