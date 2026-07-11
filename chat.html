@@ -101,19 +101,19 @@
 </header>
 
 <div id="setup">
-  <h1>IA privada, en tu navegador</h1>
-  <p>El modelo se descarga <b>una vez</b> y se ejecuta íntegramente en tu dispositivo con WebGPU.
+  <h1 id="t-titulo">IA privada, en tu navegador</h1>
+  <p id="t-intro">El modelo se descarga <b>una vez</b> y se ejecuta íntegramente en tu dispositivo con WebGPU.
      Tus preguntas no salen de aquí. Responde citando datos oficiales del BOE y de los portales
      de datos abiertos de Castilla y León, Asturias y Madrid.</p>
   <select id="modelo">
-    <option value="Qwen2.5-0.5B-Instruct-q4f16_1-MLC">Rápido — Qwen 0.5B (~350 MB de descarga)</option>
-    <option value="Qwen2.5-1.5B-Instruct-q4f16_1-MLC" selected>Equilibrado — Qwen 1.5B (~950 MB)</option>
-    <option value="Qwen2.5-3B-Instruct-q4f16_1-MLC">Calidad — Qwen 3B (~1,9 GB)</option>
+    <option value="Qwen2.5-0.5B-Instruct-q4f16_1-MLC" id="t-m1">Rápido — Qwen 0.5B (~350 MB de descarga)</option>
+    <option value="Qwen2.5-1.5B-Instruct-q4f16_1-MLC" selected id="t-m2">Equilibrado — Qwen 1.5B (~950 MB)</option>
+    <option value="Qwen2.5-3B-Instruct-q4f16_1-MLC" id="t-m3">Calidad — Qwen 3B (~1,9 GB)</option>
   </select>
   <button class="btn" id="cargar">Cargar motor</button>
   <div id="progreso"></div>
   <div id="barra"><div></div></div>
-  <p class="aviso">Requiere un navegador con WebGPU (Chrome, Edge o Safari recientes).
+  <p class="aviso" id="t-aviso">Requiere un navegador con WebGPU (Chrome, Edge o Safari recientes).
      En móviles puede ir lento; la experiencia completa está en
      <a href="https://apps.apple.com/es/app/syntheticmind/id6774833296" style="color:var(--accent)">la app</a>.</p>
 </div>
@@ -136,6 +136,59 @@ let grounder = null; // motor de grounding Rust (WASM) — el mismo código que 
 let historial = [];  // [{r:"user"|"bot", t, ev}]
 const CLAVE = "sm_chat_v1";
 const URL_WEB = "https://robertoblanco-lab.github.io/syntheticmind-web/chat.html";
+
+// ── Bilingüe: interfaz según el navegador; respuestas según cada pregunta ───
+const UI_ES = {
+  titulo: "IA privada, en tu navegador",
+  intro: "El modelo se descarga <b>una vez</b> y se ejecuta íntegramente en tu dispositivo con WebGPU. Tus preguntas no salen de aquí. Responde citando datos oficiales del BOE y de los portales de datos abiertos de Castilla y León, Asturias y Madrid.",
+  m1: "Rápido — Qwen 0.5B (~350 MB de descarga)", m2: "Equilibrado — Qwen 1.5B (~950 MB)", m3: "Calidad — Qwen 3B (~1,9 GB)",
+  cargar: "Cargar motor",
+  aviso: 'Requiere un navegador con WebGPU (Chrome, Edge o Safari recientes). En móviles puede ir lento; la experiencia completa está en <a href="https://apps.apple.com/es/app/syntheticmind/id6774833296" style="color:var(--accent)">la app</a>.',
+  placeholder: "Pregunta algo… (ej: ¿qué dice el artículo 348 bis de la LSC?)",
+  enviar: "Enviar", nueva: "Nueva", apagado: "motor apagado", cargando: "cargando…",
+  listoRust: "on-device · motor Rust · RAG activo", listoJs: "on-device · RAG activo · privado",
+  sinGPU: "Tu navegador no soporta WebGPU. Prueba con Chrome, Edge o Safari actualizados.",
+  errCarga: "Error cargando el motor: ", errGen: "Error generando la respuesta: ",
+  verificacion: (n, f) => `✓ VERIFICACIÓN · ${n} fuente${n > 1 ? "s" : ""} · fuerza ${f}% ▾`,
+  directa: "CITA DIRECTA", compartir: "Compartir", copiado: "Copiado ✓",
+  cPregunta: "Pregunta", cRespuesta: "Respuesta de SyntheticMind (IA 100% on-device)", cFuentes: "Fuentes",
+};
+const UI_EN = {
+  titulo: "Private AI, in your browser",
+  intro: "The model downloads <b>once</b> and runs entirely on your device via WebGPU. Your questions never leave it. Answers cite official data from Spain's BOE and the open-data portals of Castilla y León, Asturias and Madrid.",
+  m1: "Fast — Qwen 0.5B (~350 MB download)", m2: "Balanced — Qwen 1.5B (~950 MB)", m3: "Quality — Qwen 3B (~1.9 GB)",
+  cargar: "Load engine",
+  aviso: 'Requires a WebGPU-capable browser (recent Chrome, Edge or Safari). May be slow on phones; the full experience is in <a href="https://apps.apple.com/es/app/syntheticmind/id6774833296" style="color:var(--accent)">the app</a>.',
+  placeholder: "Ask anything… (e.g. what does article 348 bis of the LSC say?)",
+  enviar: "Send", nueva: "New", apagado: "engine off", cargando: "loading…",
+  listoRust: "on-device · Rust engine · RAG active", listoJs: "on-device · RAG active · private",
+  sinGPU: "Your browser does not support WebGPU. Try an up-to-date Chrome, Edge or Safari.",
+  errCarga: "Error loading the engine: ", errGen: "Error generating the answer: ",
+  verificacion: (n, f) => `✓ VERIFIED · ${n} source${n > 1 ? "s" : ""} · strength ${f}% ▾`,
+  directa: "DIRECT QUOTE", compartir: "Share", copiado: "Copied ✓",
+  cPregunta: "Question", cRespuesta: "Answer from SyntheticMind (100% on-device AI)", cFuentes: "Sources",
+};
+const T = (navigator.language || "es").toLowerCase().startsWith("es") ? UI_ES : UI_EN;
+(function aplicarUI() {
+  $("t-titulo").textContent = T.titulo;
+  $("t-intro").innerHTML = T.intro;
+  $("t-m1").textContent = T.m1; $("t-m2").textContent = T.m2; $("t-m3").textContent = T.m3;
+  $("cargar").textContent = T.cargar;
+  $("t-aviso").innerHTML = T.aviso;
+  $("texto").placeholder = T.placeholder;
+  $("enviar").textContent = T.enviar;
+  $("nueva").textContent = T.nueva;
+  $("etiqueta").textContent = T.apagado;
+})();
+
+// Idioma de la respuesta: el de la pregunta (heurística ligera por mensaje).
+function detectarIdioma(q) {
+  const s = " " + q.toLowerCase() + " ";
+  if (/[¿¡ñáéíóú]/.test(s)) return "es";
+  const en = (s.match(/ (the|what|which|how|is|are|does|do|can|about|law|article|say|there|who) /g) || []).length;
+  const es = (s.match(/ (que|como|cual|dice|articulo|ley|los|las|una|hay|donde|quien|para|sobre) /g) || []).length;
+  return en > es ? "en" : "es";
+}
 
 // ── PWA: service worker (offline una vez cargada) ───────────────────────────
 if ("serviceWorker" in navigator) {
@@ -225,12 +278,13 @@ $("nueva").onclick = () => {
 // ── Motor ────────────────────────────────────────────────────────────────────
 $("cargar").onclick = async () => {
   if (!navigator.gpu) {
-    $("progreso").innerHTML = '<span class="error">Tu navegador no soporta WebGPU. Prueba con Chrome, Edge o Safari actualizados.</span>';
+    $("progreso").innerHTML = '<span class="error"></span>';
+    $("progreso").firstElementChild.textContent = T.sinGPU;
     return;
   }
   $("cargar").disabled = true;
   $("barra").style.display = "block";
-  $("etiqueta").textContent = "cargando…";
+  $("etiqueta").textContent = T.cargando;
   try {
     await cargarRust(); // motor Rust primero: el corpus se le carga después
     await Promise.all([
@@ -248,14 +302,13 @@ $("cargar").onclick = async () => {
     $("chat").style.display = "block";
     $("entrada").style.display = "block";
     $("punto").classList.add("on");
-    $("etiqueta").textContent = grounder
-      ? "on-device · motor Rust · RAG activo"
-      : "on-device · RAG activo · privado";
+    $("etiqueta").textContent = grounder ? T.listoRust : T.listoJs;
     restaurar();
     $("chat").scrollTop = $("chat").scrollHeight;
     $("texto").focus();
   } catch (e) {
-    $("progreso").innerHTML = '<span class="error">Error cargando el motor: ' + e + '</span>';
+    $("progreso").innerHTML = '<span class="error"></span>';
+    $("progreso").firstElementChild.textContent = T.errCarga + e;
     $("cargar").disabled = false;
   }
 };
@@ -279,7 +332,7 @@ function pintarSello(bubble, respuesta, evidencia, pregunta) {
     const fuerza = Math.round(evidencia.reduce((a, e) => a + (e.score || 0), 0) / evidencia.length * 100);
     const cab = document.createElement("button");
     cab.className = "sello-cab";
-    cab.textContent = `✓ VERIFICACIÓN · ${evidencia.length} fuente${evidencia.length > 1 ? "s" : ""} · fuerza ${fuerza}% ▾`;
+    cab.textContent = T.verificacion(evidencia.length, fuerza);
     const panel = document.createElement("div");
     panel.className = "sello-panel";
     panel.hidden = true;
@@ -287,7 +340,7 @@ function pintarSello(bubble, respuesta, evidencia, pregunta) {
       const div = document.createElement("div");
       div.className = "ev";
       const pct = Math.round((e.score || 0) * 100);
-      div.innerHTML = `<div class="ev-cab"><b></b>${e.direct ? '<span class="directo">CITA DIRECTA</span>' : ""}<span class="score"><i style="width:${pct}%"></i></span><span style="color:var(--muted)">${pct}%</span></div><p></p>`;
+      div.innerHTML = `<div class="ev-cab"><b></b>${e.direct ? `<span class="directo">${T.directa}</span>` : ""}<span class="score"><i style="width:${pct}%"></i></span><span style="color:var(--muted)">${pct}%</span></div><p></p>`;
       div.querySelector("b").textContent = `${e.org} — ${nombre(e.s)}`;
       div.querySelector("p").textContent = e.t.length > 320 ? e.t.slice(0, 320) + "…" : e.t;
       panel.appendChild(div);
@@ -303,16 +356,16 @@ function pintarSello(bubble, respuesta, evidencia, pregunta) {
 
   const comp = document.createElement("button");
   comp.className = "compartir";
-  comp.textContent = "Compartir";
+  comp.textContent = T.compartir;
   comp.onclick = async () => {
     const fuentes = evidencia.length
-      ? "\n\nFuentes: " + [...new Set(evidencia.map(e => `${e.org} (${nombre(e.s)})`))].slice(0, 4).join(" · ")
+      ? `\n\n${T.cFuentes}: ` + [...new Set(evidencia.map(e => `${e.org} (${nombre(e.s)})`))].slice(0, 4).join(" · ")
       : "";
-    const texto = (pregunta ? `Pregunta: ${pregunta}\n\n` : "")
-      + `Respuesta de SyntheticMind (IA 100% on-device):\n${respuesta}${fuentes}\n\n${URL_WEB}`;
+    const texto = (pregunta ? `${T.cPregunta}: ${pregunta}\n\n` : "")
+      + `${T.cRespuesta}:\n${respuesta}${fuentes}\n\n${URL_WEB}`;
     try {
       if (navigator.share) await navigator.share({ text: texto });
-      else { await navigator.clipboard.writeText(texto); comp.textContent = "Copiado ✓"; setTimeout(() => comp.textContent = "Compartir", 1500); }
+      else { await navigator.clipboard.writeText(texto); comp.textContent = T.copiado; setTimeout(() => comp.textContent = T.compartir, 1500); }
     } catch {}
   };
   cont.appendChild(comp);
@@ -327,13 +380,43 @@ async function enviar() {
   burbuja("user", q);
   historial.push({ r: "user", t: q }); guardar();
 
-  const evidencia = recuperar(q);
-  let system = "Eres SyntheticMind, un asistente en español, preciso y honesto. Responde SIEMPRE en español, de forma clara y breve. No escribas metadatos técnicos (nada de 'Direct: true' ni similares).";
-  if (evidencia.length) {
-    const ctx = evidencia.map(e => `[${e.org} — ${nombre(e.s)}]\n${e.t}`).join("\n\n");
-    system += "\n\nTIENES DATOS OFICIALES ABAJO. Responde la pregunta usándolos: resume lo que dicen y menciona de qué organismo salen. PROHIBIDO decir que no tienes información o que no puedes citar documentos públicos (son datos abiertos, de uso libre). Si los datos solo responden en parte, di lo que sí dicen.\n\nDATOS OFICIALES:\n" + ctx;
+  const idioma = detectarIdioma(q);
+  // El corpus es español: para preguntas en inglés se traduce la consulta
+  // de retrieval (la respuesta sí se genera en inglés).
+  const PUENTE = [
+    [/\barticles?\b/g, "artículo"], [/\blaw\b/g, "ley"], [/\btourism\b/g, "turismo"],
+    [/\brural houses?\b/g, "casas rurales turismo rural"], [/\bhotels?\b/g, "hoteles turismo"],
+    [/\bemployment\b/g, "empleo laboral"], [/\blabou?r\b/g, "laboral"], [/\bcontracts?\b/g, "contratos"],
+    [/\bsocial security\b/g, "seguridad social afiliados"], [/\bdatasets?\b/g, "datos dataset"],
+    [/\bdismissal\b/g, "despido"], [/\bseverance\b/g, "indemnización despido"],
+    [/\bdirectors?\b/g, "administradores"], [/\bshareholders?\b/g, "socios"],
+    [/\bdissolution\b/g, "disolución"], [/\bcivil code\b/g, "código civil"],
+    [/\bcompanies act|corporations law\b/g, "sociedades de capital"],
+    [/\bwater\b/g, "agua"], [/\beducation\b/g, "educación"], [/\bhealth\b/g, "salud sanidad"],
+  ];
+  let qRet = q;
+  if (idioma === "en") {
+    qRet = q.toLowerCase();
+    for (const [re, es] of PUENTE) qRet = qRet.replace(re, es);
+  }
+  const evidencia = recuperar(qRet);
+  let system;
+  if (idioma === "es") {
+    system = "Eres SyntheticMind, un asistente en español, preciso y honesto. Responde SIEMPRE en español, de forma clara y breve. No escribas metadatos técnicos (nada de 'Direct: true' ni similares).";
+    if (evidencia.length) {
+      const ctx = evidencia.map(e => `[${e.org} — ${nombre(e.s)}]\n${e.t}`).join("\n\n");
+      system += "\n\nTIENES DATOS OFICIALES ABAJO. Responde la pregunta usándolos: resume lo que dicen y menciona de qué organismo salen. PROHIBIDO decir que no tienes información o que no puedes citar documentos públicos (son datos abiertos, de uso libre). Si los datos solo responden en parte, di lo que sí dicen.\n\nDATOS OFICIALES:\n" + ctx;
+    } else {
+      system += " Para esta pregunta no tienes datos locales: dilo con naturalidad y sugiere el portal de datos abiertos correspondiente. No inventes cifras.";
+    }
   } else {
-    system += " Para esta pregunta no tienes datos locales: dilo con naturalidad y sugiere el portal de datos abiertos correspondiente. No inventes cifras.";
+    system = "You are SyntheticMind, a precise and honest assistant. ALWAYS reply in English, clearly and briefly. Do not print technical metadata (no 'Direct: true' or similar).";
+    if (evidencia.length) {
+      const ctx = evidencia.map(e => `[${e.org} — ${nombre(e.s)}]\n${e.t}`).join("\n\n");
+      system += "\n\nYOU HAVE OFFICIAL DATA BELOW (in Spanish, from Spain's public administrations). Answer the question using it: translate and summarize the relevant parts into English and mention the issuing body. It is open public data, free to cite — NEVER say you lack information or cannot cite public documents. If the data only partially answers, state what it does say.\n\nOFFICIAL DATA:\n" + ctx;
+    } else {
+      system += " You have no local data for this question: say so naturally and suggest the relevant Spanish open-data portal. Do not invent figures.";
+    }
   }
 
   const bot = burbuja("bot", "…");
@@ -359,7 +442,7 @@ async function enviar() {
     pintarSello(bot, resp, ev, q);
     $("chat").scrollTop = $("chat").scrollHeight;
   } catch (e) {
-    bot.textContent = "Error generando la respuesta: " + e;
+    bot.textContent = T.errGen + e;
   }
   generando = false;
 }
