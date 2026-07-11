@@ -5,6 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>SyntheticMind Web — chat privado en tu navegador</title>
 <meta name="description" content="Chat con IA que se ejecuta íntegramente en tu navegador, con datos oficiales del BOE y de los portales de datos abiertos. Nada sale de tu dispositivo.">
+<meta name="theme-color" content="#0b0f0d">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-192.png">
 <style>
   :root {
     --bg: #0b0f0d; --bg-card: #131a16; --border: #223028;
@@ -20,15 +23,19 @@
     padding: 12px 20px; border-bottom: 1px solid var(--border);
     display: flex; align-items: center; justify-content: space-between; gap: 10px;
   }
-  .logo { font-weight: 700; text-decoration: none; color: var(--text); }
+  .logo { font-weight: 700; text-decoration: none; color: var(--text); white-space: nowrap; }
   .logo span { color: var(--accent); }
-  .estado { font-size: .8rem; color: var(--muted); display: flex; align-items: center; gap: 8px; }
+  .estado { font-size: .78rem; color: var(--muted); display: flex; align-items: center; gap: 8px; min-width: 0; }
+  .estado span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .dot { width: 8px; height: 8px; border-radius: 50%; background: #666; flex: none; }
   .dot.on { background: var(--accent); box-shadow: 0 0 8px var(--accent); }
-
-  #setup {
-    max-width: 560px; margin: 40px auto; padding: 0 20px; text-align: center;
+  #nueva {
+    font-size: .78rem; color: var(--muted); background: none;
+    border: 1px solid var(--border); border-radius: 8px; padding: 5px 12px; cursor: pointer;
   }
+  #nueva:hover { color: var(--text); border-color: var(--accent-dim); }
+
+  #setup { max-width: 560px; margin: 40px auto; padding: 0 20px; text-align: center; }
   #setup h1 { font-size: 1.6rem; margin-bottom: 10px; letter-spacing: -.02em; }
   #setup p { color: var(--muted); font-size: .95rem; margin-bottom: 18px; }
   select, button, textarea {
@@ -36,10 +43,7 @@
     border: 1px solid var(--border); border-radius: 10px;
   }
   select { padding: 10px 14px; width: 100%; margin-bottom: 12px; }
-  .btn {
-    padding: 12px 26px; cursor: pointer; font-weight: 600;
-    background: var(--accent); color: #06130b; border: none;
-  }
+  .btn { padding: 12px 26px; cursor: pointer; font-weight: 600; background: var(--accent); color: #06130b; border: none; }
   .btn:disabled { opacity: .5; cursor: default; }
   #progreso { margin-top: 16px; font-size: .85rem; color: var(--muted); min-height: 2.4em; }
   #barra { height: 6px; background: var(--bg-card); border-radius: 4px; overflow: hidden; margin-top: 8px; display: none; }
@@ -49,15 +53,40 @@
 
   #chat { flex: 1; overflow-y: auto; padding: 20px; display: none; }
   .hilo { max-width: 760px; margin: 0 auto; }
-  .msg { padding: 12px 16px; border-radius: 12px; margin-bottom: 12px; font-size: .95rem;
+  .msg { padding: 12px 16px; border-radius: 12px; margin-bottom: 10px; font-size: .95rem;
          white-space: pre-wrap; word-wrap: break-word; line-height: 1.55; }
   .msg.user { background: #1b2620; margin-left: 18%; }
   .msg.bot { background: var(--bg-card); border: 1px solid var(--border); margin-right: 6%; }
-  .fuentes { font-size: .78rem; color: var(--accent); margin: -6px 0 14px 4px; }
 
-  #entrada {
-    display: none; border-top: 1px solid var(--border); padding: 12px 20px;
+  /* ── Sello de verificación ─────────────────────────────────── */
+  .sello { margin: -2px 6% 16px 0; }
+  .sello-cab {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: .78rem; color: var(--accent); background: none;
+    border: 1px solid var(--border); border-radius: 999px;
+    padding: 5px 14px; cursor: pointer;
   }
+  .sello-cab:hover { border-color: var(--accent-dim); }
+  .compartir {
+    font-size: .78rem; color: var(--muted); background: none;
+    border: 1px solid var(--border); border-radius: 999px;
+    padding: 5px 14px; cursor: pointer; margin-left: 8px;
+  }
+  .compartir:hover { color: var(--text); border-color: var(--accent-dim); }
+  .sello-panel {
+    margin-top: 8px; border: 1px solid var(--border); border-radius: 12px;
+    background: #0f1512; padding: 12px 14px;
+  }
+  .ev { padding: 8px 0; border-bottom: 1px solid var(--border); }
+  .ev:last-child { border-bottom: none; }
+  .ev-cab { display: flex; align-items: center; gap: 10px; font-size: .8rem; margin-bottom: 4px; }
+  .ev-cab b { color: var(--accent); font-weight: 600; }
+  .ev-cab .directo { color: #06130b; background: var(--accent); border-radius: 6px; padding: 1px 7px; font-size: .7rem; font-weight: 700; }
+  .score { flex: 1; max-width: 90px; height: 5px; background: var(--border); border-radius: 3px; overflow: hidden; }
+  .score i { display: block; height: 100%; background: var(--accent); }
+  .ev p { font-size: .8rem; color: var(--muted); line-height: 1.5; }
+
+  #entrada { display: none; border-top: 1px solid var(--border); padding: 12px 20px; }
   #entrada .caja { max-width: 760px; margin: 0 auto; display: flex; gap: 10px; }
   textarea { flex: 1; padding: 12px 14px; resize: none; height: 52px; }
   #enviar { padding: 0 22px; }
@@ -68,6 +97,7 @@
 <header>
   <a class="logo" href="index.html">Synthetic<span>Mind</span> <small style="color:var(--muted);font-weight:400">Web</small></a>
   <div class="estado"><span class="dot" id="punto"></span><span id="etiqueta">motor apagado</span></div>
+  <button id="nueva" title="Borrar conversación">Nueva</button>
 </header>
 
 <div id="setup">
@@ -103,7 +133,14 @@ import { CreateMLCEngine } from "https://esm.run/@mlc-ai/web-llm";
 const $ = id => document.getElementById(id);
 let engine = null, corpus = [], generando = false;
 let grounder = null; // motor de grounding Rust (WASM) — el mismo código que la app
-const historial = [];
+let historial = [];  // [{r:"user"|"bot", t, ev}]
+const CLAVE = "sm_chat_v1";
+const URL_WEB = "https://robertoblanco-lab.github.io/syntheticmind-web/chat.html";
+
+// ── PWA: service worker (offline una vez cargada) ───────────────────────────
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("sw.js").catch(() => {});
+}
 
 async function cargarRust() {
   try {
@@ -153,10 +190,37 @@ function recuperar(q, topK = 5, maxChars = 3600) {
   const out = []; let chars = 0;
   for (const [score, c] of scored.slice(0, topK)) {
     if (score < 0.2 || chars > maxChars) break;
-    out.push(c); chars += c.t.length;
+    out.push({ ...c, score, direct: false }); chars += c.t.length;
   }
   return out;
 }
+
+// ── Nombres oficiales de los códigos legales ────────────────────────────────
+const NOMBRES = { LSC: "Ley de Sociedades de Capital", ET: "Estatuto de los Trabajadores",
+  CC: "Código Civil", LEC: "Ley de Enjuiciamiento Civil", TRLC: "Ley Concursal",
+  CCom: "Código de Comercio", RRM: "Reglamento del Registro Mercantil",
+  "RDL5-2023": "RDL 5/2023, modificaciones estructurales" };
+function nombre(s) {
+  const m = s.match(/^(\S+) art\. (.+)$/);
+  return m && NOMBRES[m[1]] ? `${NOMBRES[m[1]]} (${m[1]}), artículo ${m[2]}` : s;
+}
+
+// ── Memoria de conversación (localStorage) ──────────────────────────────────
+function guardar() {
+  try { localStorage.setItem(CLAVE, JSON.stringify(historial.slice(-40))); } catch {}
+}
+function restaurar() {
+  try { historial = JSON.parse(localStorage.getItem(CLAVE)) || []; } catch { historial = []; }
+  for (const m of historial) {
+    if (m.r === "user") burbuja("user", m.t);
+    else { const b = burbuja("bot", m.t); pintarSello(b, m.t, m.ev || [], m.q || ""); }
+  }
+}
+$("nueva").onclick = () => {
+  historial = []; guardar();
+  $("hilo").innerHTML = "";
+  $("texto") && $("texto").focus();
+};
 
 // ── Motor ────────────────────────────────────────────────────────────────────
 $("cargar").onclick = async () => {
@@ -187,6 +251,8 @@ $("cargar").onclick = async () => {
     $("etiqueta").textContent = grounder
       ? "on-device · motor Rust · RAG activo"
       : "on-device · RAG activo · privado";
+    restaurar();
+    $("chat").scrollTop = $("chat").scrollHeight;
     $("texto").focus();
   } catch (e) {
     $("progreso").innerHTML = '<span class="error">Error cargando el motor: ' + e + '</span>';
@@ -204,24 +270,66 @@ function burbuja(clase, texto) {
   return d;
 }
 
+// Sello de verificación + compartir, bajo una respuesta del bot.
+function pintarSello(bubble, respuesta, evidencia, pregunta) {
+  const cont = document.createElement("div");
+  cont.className = "sello";
+
+  if (evidencia.length) {
+    const fuerza = Math.round(evidencia.reduce((a, e) => a + (e.score || 0), 0) / evidencia.length * 100);
+    const cab = document.createElement("button");
+    cab.className = "sello-cab";
+    cab.textContent = `✓ VERIFICACIÓN · ${evidencia.length} fuente${evidencia.length > 1 ? "s" : ""} · fuerza ${fuerza}% ▾`;
+    const panel = document.createElement("div");
+    panel.className = "sello-panel";
+    panel.hidden = true;
+    for (const e of evidencia) {
+      const div = document.createElement("div");
+      div.className = "ev";
+      const pct = Math.round((e.score || 0) * 100);
+      div.innerHTML = `<div class="ev-cab"><b></b>${e.direct ? '<span class="directo">CITA DIRECTA</span>' : ""}<span class="score"><i style="width:${pct}%"></i></span><span style="color:var(--muted)">${pct}%</span></div><p></p>`;
+      div.querySelector("b").textContent = `${e.org} — ${nombre(e.s)}`;
+      div.querySelector("p").textContent = e.t.length > 320 ? e.t.slice(0, 320) + "…" : e.t;
+      panel.appendChild(div);
+    }
+    cab.onclick = () => {
+      panel.hidden = !panel.hidden;
+      cab.textContent = cab.textContent.replace(panel.hidden ? "▴" : "▾", panel.hidden ? "▾" : "▴");
+      $("chat").scrollTop = $("chat").scrollHeight;
+    };
+    cont.appendChild(cab);
+    cont.appendChild(panel);
+  }
+
+  const comp = document.createElement("button");
+  comp.className = "compartir";
+  comp.textContent = "Compartir";
+  comp.onclick = async () => {
+    const fuentes = evidencia.length
+      ? "\n\nFuentes: " + [...new Set(evidencia.map(e => `${e.org} (${nombre(e.s)})`))].slice(0, 4).join(" · ")
+      : "";
+    const texto = (pregunta ? `Pregunta: ${pregunta}\n\n` : "")
+      + `Respuesta de SyntheticMind (IA 100% on-device):\n${respuesta}${fuentes}\n\n${URL_WEB}`;
+    try {
+      if (navigator.share) await navigator.share({ text: texto });
+      else { await navigator.clipboard.writeText(texto); comp.textContent = "Copiado ✓"; setTimeout(() => comp.textContent = "Compartir", 1500); }
+    } catch {}
+  };
+  cont.appendChild(comp);
+  bubble.after(cont);
+}
+
 async function enviar() {
   const q = $("texto").value.trim();
   if (!q || !engine || generando) return;
   generando = true;
   $("texto").value = "";
   burbuja("user", q);
+  historial.push({ r: "user", t: q }); guardar();
 
   const evidencia = recuperar(q);
   let system = "Eres SyntheticMind, un asistente en español, preciso y honesto. Responde SIEMPRE en español, de forma clara y breve. No escribas metadatos técnicos (nada de 'Direct: true' ni similares).";
   if (evidencia.length) {
-    const NOMBRES = { LSC: "Ley de Sociedades de Capital", ET: "Estatuto de los Trabajadores",
-      CC: "Código Civil", LEC: "Ley de Enjuiciamiento Civil", TRLC: "Ley Concursal",
-      CCom: "Código de Comercio", RRM: "Reglamento del Registro Mercantil",
-      "RDL5-2023": "RDL 5/2023, modificaciones estructurales" };
-    const nombre = s => {
-      const m = s.match(/^(\S+) art\. (.+)$/);
-      return m && NOMBRES[m[1]] ? `${NOMBRES[m[1]]} (${m[1]}), artículo ${m[2]}` : s;
-    };
     const ctx = evidencia.map(e => `[${e.org} — ${nombre(e.s)}]\n${e.t}`).join("\n\n");
     system += "\n\nTIENES DATOS OFICIALES ABAJO. Responde la pregunta usándolos: resume lo que dicen y menciona de qué organismo salen. PROHIBIDO decir que no tienes información o que no puedes citar documentos públicos (son datos abiertos, de uso libre). Si los datos solo responden en parte, di lo que sí dicen.\n\nDATOS OFICIALES:\n" + ctx;
   } else {
@@ -230,9 +338,11 @@ async function enviar() {
 
   const bot = burbuja("bot", "…");
   try {
+    const previos = historial.slice(0, -1).slice(-6)
+      .map(m => ({ role: m.r === "user" ? "user" : "assistant", content: m.t }));
     const mensajes = [
       { role: "system", content: system },
-      ...historial.slice(-6),
+      ...previos,
       { role: "user", content: q },
     ];
     const stream = await engine.chat.completions.create({
@@ -244,13 +354,10 @@ async function enviar() {
       bot.textContent = resp;
       $("chat").scrollTop = $("chat").scrollHeight;
     }
-    historial.push({ role: "user", content: q }, { role: "assistant", content: resp });
-    if (evidencia.length) {
-      const f = document.createElement("div");
-      f.className = "fuentes";
-      f.textContent = "✓ Fuentes: " + [...new Set(evidencia.map(e => `${e.org} (${e.s})`))].slice(0, 4).join(" · ");
-      $("hilo").appendChild(f);
-    }
+    const ev = evidencia.map(e => ({ org: e.org, s: e.s, t: e.t, score: e.score || 0, direct: !!e.direct }));
+    historial.push({ r: "bot", t: resp, ev, q }); guardar();
+    pintarSello(bot, resp, ev, q);
+    $("chat").scrollTop = $("chat").scrollHeight;
   } catch (e) {
     bot.textContent = "Error generando la respuesta: " + e;
   }
