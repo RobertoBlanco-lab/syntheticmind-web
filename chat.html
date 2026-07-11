@@ -212,9 +212,17 @@ async function enviar() {
   burbuja("user", q);
 
   const evidencia = recuperar(q);
-  let system = "Eres SyntheticMind, un asistente en español, preciso y honesto. Responde SIEMPRE en español, de forma clara y breve.";
+  let system = "Eres SyntheticMind, un asistente en español, preciso y honesto. Responde SIEMPRE en español, de forma clara y breve. No escribas metadatos técnicos (nada de 'Direct: true' ni similares).";
   if (evidencia.length) {
-    const ctx = evidencia.map(e => `[${e.org} — ${e.s}]\n${e.t}`).join("\n\n");
+    const NOMBRES = { LSC: "Ley de Sociedades de Capital", ET: "Estatuto de los Trabajadores",
+      CC: "Código Civil", LEC: "Ley de Enjuiciamiento Civil", TRLC: "Ley Concursal",
+      CCom: "Código de Comercio", RRM: "Reglamento del Registro Mercantil",
+      "RDL5-2023": "RDL 5/2023, modificaciones estructurales" };
+    const nombre = s => {
+      const m = s.match(/^(\S+) art\. (.+)$/);
+      return m && NOMBRES[m[1]] ? `${NOMBRES[m[1]]} (${m[1]}), artículo ${m[2]}` : s;
+    };
+    const ctx = evidencia.map(e => `[${e.org} — ${nombre(e.s)}]\n${e.t}`).join("\n\n");
     system += "\n\nTIENES DATOS OFICIALES ABAJO. Responde la pregunta usándolos: resume lo que dicen y menciona de qué organismo salen. PROHIBIDO decir que no tienes información o que no puedes citar documentos públicos (son datos abiertos, de uso libre). Si los datos solo responden en parte, di lo que sí dicen.\n\nDATOS OFICIALES:\n" + ctx;
   } else {
     system += " Para esta pregunta no tienes datos locales: dilo con naturalidad y sugiere el portal de datos abiertos correspondiente. No inventes cifras.";
