@@ -1,0 +1,13 @@
+{
+  "name": "synthetic_mind_wasm",
+  "type": "module",
+  "version": "0.1.0",
+  "files": [
+    "synthetic_mind_wasm_bg.wasm",
+    "synthetic_mind_wasm.js"
+  ],
+  "main": "synthetic_mind_wasm.js",
+  "sideEffects": [
+    "./snippets/*"
+  ]
+}

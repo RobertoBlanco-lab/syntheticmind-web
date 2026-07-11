@@ -102,7 +102,19 @@ import { CreateMLCEngine } from "https://esm.run/@mlc-ai/web-llm";
 
 const $ = id => document.getElementById(id);
 let engine = null, corpus = [], generando = false;
+let grounder = null; // motor de grounding Rust (WASM) — el mismo código que la app
 const historial = [];
+
+async function cargarRust() {
+  try {
+    const mod = await import("./wasm/synthetic_mind_wasm.js");
+    await mod.default();
+    grounder = new mod.Grounder();
+    console.log("[WASM] motor Rust cargado");
+  } catch (e) {
+    console.warn("[WASM] motor Rust no disponible, retrieval JS:", e);
+  }
+}
 
 // ── Corpus RAG: datos oficiales exportados de la app ────────────────────────
 const FICHEROS = [
@@ -115,14 +127,19 @@ async function cargarCorpus() {
   const partes = await Promise.all(FICHEROS.map(async ([f, org]) => {
     try {
       const r = await fetch(f); if (!r.ok) return [];
-      return (await r.json()).map(x => ({ ...x, org, tl: x.t.toLowerCase() }));
+      const txt = await r.text();
+      if (grounder) grounder.load_corpus(org, txt); // corpus al motor Rust
+      return JSON.parse(txt).map(x => ({ ...x, org, tl: x.t.toLowerCase() }));
     } catch { return []; }
   }));
   corpus = partes.flat();
 }
 
-// Retrieval por solape de términos — misma idea que el motor de la app.
+// Retrieval: motor Rust (WASM) si está disponible; si no, réplica JS.
 function recuperar(q, topK = 5, maxChars = 3600) {
+  if (grounder) {
+    try { return JSON.parse(grounder.retrieve(q, topK, maxChars)); } catch {}
+  }
   const terms = q.toLowerCase().split(/\s+/)
     .map(w => w.replace(/[^a-záéíóúüñ0-9]/gi, "")).filter(w => w.length > 3);
   if (!terms.length || !corpus.length) return [];
@@ -135,7 +152,7 @@ function recuperar(q, topK = 5, maxChars = 3600) {
   scored.sort((a, b) => b[0] - a[0]);
   const out = []; let chars = 0;
   for (const [score, c] of scored.slice(0, topK)) {
-    if (score < 0.34 || chars > maxChars) break;
+    if (score < 0.2 || chars > maxChars) break;
     out.push(c); chars += c.t.length;
   }
   return out;
@@ -151,7 +168,8 @@ $("cargar").onclick = async () => {
   $("barra").style.display = "block";
   $("etiqueta").textContent = "cargando…";
   try {
-    const [,] = await Promise.all([
+    await cargarRust(); // motor Rust primero: el corpus se le carga después
+    await Promise.all([
       (async () => {
         engine = await CreateMLCEngine($("modelo").value, {
           initProgressCallback: p => {
@@ -166,7 +184,9 @@ $("cargar").onclick = async () => {
     $("chat").style.display = "block";
     $("entrada").style.display = "block";
     $("punto").classList.add("on");
-    $("etiqueta").textContent = "on-device · RAG activo · privado";
+    $("etiqueta").textContent = grounder
+      ? "on-device · motor Rust · RAG activo"
+      : "on-device · RAG activo · privado";
     $("texto").focus();
   } catch (e) {
     $("progreso").innerHTML = '<span class="error">Error cargando el motor: ' + e + '</span>';
@@ -192,10 +212,12 @@ async function enviar() {
   burbuja("user", q);
 
   const evidencia = recuperar(q);
-  let system = "Eres SyntheticMind, un asistente en español, preciso y honesto. Responde SIEMPRE en español, de forma clara y breve. Si no sabes algo, dilo.";
+  let system = "Eres SyntheticMind, un asistente en español, preciso y honesto. Responde SIEMPRE en español, de forma clara y breve.";
   if (evidencia.length) {
     const ctx = evidencia.map(e => `[${e.org} — ${e.s}]\n${e.t}`).join("\n\n");
-    system += "\n\nDATOS OFICIALES (fúndate SOLO en ellos para responder; cita la fuente):\n" + ctx;
+    system += "\n\nTIENES DATOS OFICIALES ABAJO. Responde la pregunta usándolos: resume lo que dicen y menciona de qué organismo salen. PROHIBIDO decir que no tienes información o que no puedes citar documentos públicos (son datos abiertos, de uso libre). Si los datos solo responden en parte, di lo que sí dicen.\n\nDATOS OFICIALES:\n" + ctx;
+  } else {
+    system += " Para esta pregunta no tienes datos locales: dilo con naturalidad y sugiere el portal de datos abiertos correspondiente. No inventes cifras.";
   }
 
   const bot = burbuja("bot", "…");
