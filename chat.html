@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SyntheticMind Web — chat privado en tu navegador</title>
+<meta name="description" content="Chat con IA que se ejecuta íntegramente en tu navegador, con datos oficiales del BOE y de los portales de datos abiertos. Nada sale de tu dispositivo.">
+<style>
+  :root {
+    --bg: #0b0f0d; --bg-card: #131a16; --border: #223028;
+    --text: #e8f0ea; --muted: #93a89b; --accent: #3ddc84; --accent-dim: #2aa864;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--bg); color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    display: flex; flex-direction: column; height: 100dvh;
+  }
+  header {
+    padding: 12px 20px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  }
+  .logo { font-weight: 700; text-decoration: none; color: var(--text); }
+  .logo span { color: var(--accent); }
+  .estado { font-size: .8rem; color: var(--muted); display: flex; align-items: center; gap: 8px; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: #666; flex: none; }
+  .dot.on { background: var(--accent); box-shadow: 0 0 8px var(--accent); }
+
+  #setup {
+    max-width: 560px; margin: 40px auto; padding: 0 20px; text-align: center;
+  }
+  #setup h1 { font-size: 1.6rem; margin-bottom: 10px; letter-spacing: -.02em; }
+  #setup p { color: var(--muted); font-size: .95rem; margin-bottom: 18px; }
+  select, button, textarea {
+    font: inherit; color: var(--text); background: var(--bg-card);
+    border: 1px solid var(--border); border-radius: 10px;
+  }
+  select { padding: 10px 14px; width: 100%; margin-bottom: 12px; }
+  .btn {
+    padding: 12px 26px; cursor: pointer; font-weight: 600;
+    background: var(--accent); color: #06130b; border: none;
+  }
+  .btn:disabled { opacity: .5; cursor: default; }
+  #progreso { margin-top: 16px; font-size: .85rem; color: var(--muted); min-height: 2.4em; }
+  #barra { height: 6px; background: var(--bg-card); border-radius: 4px; overflow: hidden; margin-top: 8px; display: none; }
+  #barra > div { height: 100%; width: 0%; background: var(--accent); transition: width .3s; }
+  .aviso { font-size: .8rem; color: var(--muted); margin-top: 14px; }
+  .error { color: #ff7b6b; }
+
+  #chat { flex: 1; overflow-y: auto; padding: 20px; display: none; }
+  .hilo { max-width: 760px; margin: 0 auto; }
+  .msg { padding: 12px 16px; border-radius: 12px; margin-bottom: 12px; font-size: .95rem;
+         white-space: pre-wrap; word-wrap: break-word; line-height: 1.55; }
+  .msg.user { background: #1b2620; margin-left: 18%; }
+  .msg.bot { background: var(--bg-card); border: 1px solid var(--border); margin-right: 6%; }
+  .fuentes { font-size: .78rem; color: var(--accent); margin: -6px 0 14px 4px; }
+
+  #entrada {
+    display: none; border-top: 1px solid var(--border); padding: 12px 20px;
+  }
+  #entrada .caja { max-width: 760px; margin: 0 auto; display: flex; gap: 10px; }
+  textarea { flex: 1; padding: 12px 14px; resize: none; height: 52px; }
+  #enviar { padding: 0 22px; }
+</style>
+</head>
+<body>
+
+<header>
+  <a class="logo" href="index.html">Synthetic<span>Mind</span> <small style="color:var(--muted);font-weight:400">Web</small></a>
+  <div class="estado"><span class="dot" id="punto"></span><span id="etiqueta">motor apagado</span></div>
+</header>
+
+<div id="setup">
+  <h1>IA privada, en tu navegador</h1>
+  <p>El modelo se descarga <b>una vez</b> y se ejecuta íntegramente en tu dispositivo con WebGPU.
+     Tus preguntas no salen de aquí. Responde citando datos oficiales del BOE y de los portales
+     de datos abiertos de Castilla y León, Asturias y Madrid.</p>
+  <select id="modelo">
+    <option value="Qwen2.5-0.5B-Instruct-q4f16_1-MLC">Rápido — Qwen 0.5B (~350 MB de descarga)</option>
+    <option value="Qwen2.5-1.5B-Instruct-q4f16_1-MLC" selected>Equilibrado — Qwen 1.5B (~950 MB)</option>
+    <option value="Qwen2.5-3B-Instruct-q4f16_1-MLC">Calidad — Qwen 3B (~1,9 GB)</option>
+  </select>
+  <button class="btn" id="cargar">Cargar motor</button>
+  <div id="progreso"></div>
+  <div id="barra"><div></div></div>
+  <p class="aviso">Requiere un navegador con WebGPU (Chrome, Edge o Safari recientes).
+     En móviles puede ir lento; la experiencia completa está en
+     <a href="https://apps.apple.com/es/app/syntheticmind/id6774833296" style="color:var(--accent)">la app</a>.</p>
+</div>
+
+<div id="chat"><div class="hilo" id="hilo"></div></div>
+
+<div id="entrada">
+  <div class="caja">
+    <textarea id="texto" placeholder="Pregunta algo… (ej: ¿qué dice el artículo 348 bis de la LSC?)"></textarea>
+    <button class="btn" id="enviar">Enviar</button>
+  </div>
+</div>
+
+<script type="module">
+import { CreateMLCEngine } from "https://esm.run/@mlc-ai/web-llm";
+
+const $ = id => document.getElementById(id);
+let engine = null, corpus = [], generando = false;
+const historial = [];
+
+// ── Corpus RAG: datos oficiales exportados de la app ────────────────────────
+const FICHEROS = [
+  ["datos_legal.json",    "BOE"],
+  ["datos_jcyl.json",     "Datos Abiertos JCyL"],
+  ["datos_asturias.json", "Datos Abiertos Asturias"],
+  ["datos_madrid.json",   "Datos Abiertos C. Madrid"],
+];
+async function cargarCorpus() {
+  const partes = await Promise.all(FICHEROS.map(async ([f, org]) => {
+    try {
+      const r = await fetch(f); if (!r.ok) return [];
+      return (await r.json()).map(x => ({ ...x, org, tl: x.t.toLowerCase() }));
+    } catch { return []; }
+  }));
+  corpus = partes.flat();
+}
+
+// Retrieval por solape de términos — misma idea que el motor de la app.
+function recuperar(q, topK = 5, maxChars = 3600) {
+  const terms = q.toLowerCase().split(/\s+/)
+    .map(w => w.replace(/[^a-záéíóúüñ0-9]/gi, "")).filter(w => w.length > 3);
+  if (!terms.length || !corpus.length) return [];
+  const scored = [];
+  for (const c of corpus) {
+    let hits = 0;
+    for (const t of terms) if (c.tl.includes(t)) hits++;
+    if (hits) scored.push([hits / terms.length, c]);
+  }
+  scored.sort((a, b) => b[0] - a[0]);
+  const out = []; let chars = 0;
+  for (const [score, c] of scored.slice(0, topK)) {
+    if (score < 0.34 || chars > maxChars) break;
+    out.push(c); chars += c.t.length;
+  }
+  return out;
+}
+
+// ── Motor ────────────────────────────────────────────────────────────────────
+$("cargar").onclick = async () => {
+  if (!navigator.gpu) {
+    $("progreso").innerHTML = '<span class="error">Tu navegador no soporta WebGPU. Prueba con Chrome, Edge o Safari actualizados.</span>';
+    return;
+  }
+  $("cargar").disabled = true;
+  $("barra").style.display = "block";
+  $("etiqueta").textContent = "cargando…";
+  try {
+    const [,] = await Promise.all([
+      (async () => {
+        engine = await CreateMLCEngine($("modelo").value, {
+          initProgressCallback: p => {
+            $("progreso").textContent = p.text;
+            $("barra").firstElementChild.style.width = Math.round((p.progress || 0) * 100) + "%";
+          }
+        });
+      })(),
+      cargarCorpus(),
+    ]);
+    $("setup").style.display = "none";
+    $("chat").style.display = "block";
+    $("entrada").style.display = "block";
+    $("punto").classList.add("on");
+    $("etiqueta").textContent = "on-device · RAG activo · privado";
+    $("texto").focus();
+  } catch (e) {
+    $("progreso").innerHTML = '<span class="error">Error cargando el motor: ' + e + '</span>';
+    $("cargar").disabled = false;
+  }
+};
+
+// ── Chat ─────────────────────────────────────────────────────────────────────
+function burbuja(clase, texto) {
+  const d = document.createElement("div");
+  d.className = "msg " + clase;
+  d.textContent = texto;
+  $("hilo").appendChild(d);
+  $("chat").scrollTop = $("chat").scrollHeight;
+  return d;
+}
+
+async function enviar() {
+  const q = $("texto").value.trim();
+  if (!q || !engine || generando) return;
+  generando = true;
+  $("texto").value = "";
+  burbuja("user", q);
+
+  const evidencia = recuperar(q);
+  let system = "Eres SyntheticMind, un asistente en español, preciso y honesto. Responde SIEMPRE en español, de forma clara y breve. Si no sabes algo, dilo.";
+  if (evidencia.length) {
+    const ctx = evidencia.map(e => `[${e.org} — ${e.s}]\n${e.t}`).join("\n\n");
+    system += "\n\nDATOS OFICIALES (fúndate SOLO en ellos para responder; cita la fuente):\n" + ctx;
+  }
+
+  const bot = burbuja("bot", "…");
+  try {
+    const mensajes = [
+      { role: "system", content: system },
+      ...historial.slice(-6),
+      { role: "user", content: q },
+    ];
+    const stream = await engine.chat.completions.create({
+      messages: mensajes, stream: true, temperature: 0.4, max_tokens: 600,
+    });
+    let resp = "";
+    for await (const ch of stream) {
+      resp += ch.choices[0]?.delta?.content || "";
+      bot.textContent = resp;
+      $("chat").scrollTop = $("chat").scrollHeight;
+    }
+    historial.push({ role: "user", content: q }, { role: "assistant", content: resp });
+    if (evidencia.length) {
+      const f = document.createElement("div");
+      f.className = "fuentes";
+      f.textContent = "✓ Fuentes: " + [...new Set(evidencia.map(e => `${e.org} (${e.s})`))].slice(0, 4).join(" · ");
+      $("hilo").appendChild(f);
+    }
+  } catch (e) {
+    bot.textContent = "Error generando la respuesta: " + e;
+  }
+  generando = false;
+}
+
+$("enviar").onclick = enviar;
+$("texto").addEventListener("keydown", e => {
+  if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); enviar(); }
+});
+</script>
+
+</body>
+</html>
