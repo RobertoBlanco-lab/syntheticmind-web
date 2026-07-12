@@ -2,7 +2,7 @@
 // Cachea la app y los corpus para que funcione offline una vez cargada
 // ("modo avión" también en la web). El modelo LLM lo cachea WebLLM por su
 // cuenta (Cache API propia), aquí no se duplica.
-const CACHE = "sm-web-v1";
+const CACHE = "sm-web-v2";
 const SHELL = [
   "./", "./index.html", "./chat.html", "./manifest.webmanifest",
   "./icon-192.png", "./icon-512.png",
@@ -35,9 +35,12 @@ self.addEventListener("fetch", e => {
     || url.hostname.endsWith("esm.run")
     || url.hostname.endsWith("jsdelivr.net");
   if (!cacheable) return;
+  // Páginas HTML: red primero (para que las actualizaciones lleguen),
+  // caché solo como respaldo offline. Resto: caché primero.
+  const esPagina = e.request.mode === "navigate" || e.request.destination === "document";
   e.respondWith((async () => {
     const hit = await caches.match(e.request);
-    if (hit) return hit;
+    if (hit && !esPagina) return hit;
     try {
       const r = await fetch(e.request);
       if (r && (r.ok || r.type === "opaque")) {
